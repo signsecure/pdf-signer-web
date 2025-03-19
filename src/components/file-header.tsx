@@ -1,5 +1,6 @@
+"use client";
+
 import { Upload, Download } from "lucide-react";
-import type React from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -8,7 +9,7 @@ import {
 } from "@/components/ui/tooltip";
 
 interface FileHeaderProps {
-  file: File;
+  file: File | undefined;
   onChangeFile: () => void;
 }
 
@@ -39,9 +40,9 @@ export const FileHeader = ({ file, onChangeFile }: FileHeaderProps) => {
   return (
     <div className="flex items-center justify-between border-b bg-white p-4">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#007acc]/10">
           <svg
-            className="h-5 w-5 text-primary"
+            className="h-5 w-5 text-[#007acc]"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -56,10 +57,10 @@ export const FileHeader = ({ file, onChangeFile }: FileHeaderProps) => {
         </div>
         <div className="min-w-0">
           <h2 className="truncate text-sm font-medium text-gray-700">
-            {file.name}
+            {file ? file.name : "No file selected"}
           </h2>
           <p className="text-xs text-gray-500">
-            {(file.size / 1024 / 1024).toFixed(2)} MB
+            {(file ? file.size : 0) / 1024 / 1024} MB
           </p>
         </div>
       </div>
@@ -69,9 +70,9 @@ export const FileHeader = ({ file, onChangeFile }: FileHeaderProps) => {
             <TooltipTrigger asChild>
               <button
                 onClick={handleDownloadPDF}
-                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="flex items-center gap-2 rounded-lg border border-[#007acc]/30 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-[#007acc]/5 focus:outline-none focus:ring-2 focus:ring-[#007acc] focus:ring-offset-2"
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4 text-[#007acc]" />
               </button>
             </TooltipTrigger>
             <TooltipContent>
@@ -83,9 +84,9 @@ export const FileHeader = ({ file, onChangeFile }: FileHeaderProps) => {
             <TooltipTrigger asChild>
               <button
                 onClick={onChangeFile}
-                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="flex items-center gap-2 rounded-lg border border-[#007acc]/30 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-[#007acc]/5 focus:outline-none focus:ring-2 focus:ring-[#007acc] focus:ring-offset-2"
               >
-                <Upload className="h-4 w-4" />
+                <Upload className="h-4 w-4 text-[#007acc]" />
               </button>
             </TooltipTrigger>
             <TooltipContent>

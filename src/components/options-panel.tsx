@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { useState } from "react";
 import {
   ChevronRight,
@@ -19,7 +21,6 @@ export const OptionsPanel: React.FC<{ onAddSignature: () => void }> = ({
   onAddSignature,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-
   api.certificate.isCertificatePresent.usePrefetchQuery();
 
   // Use React Query to handle the async checkSignSecureNative function
@@ -40,7 +41,7 @@ export const OptionsPanel: React.FC<{ onAddSignature: () => void }> = ({
 
   return (
     <div className="w-full">
-      <div className="p-6">
+      <div className="p-4">
         {isNativeAvailable === false && !isCheckingNative && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
             <div className="flex items-start">
@@ -71,7 +72,7 @@ export const OptionsPanel: React.FC<{ onAddSignature: () => void }> = ({
           </div>
         )}
 
-        <h2 className="mb-6 text-lg font-semibold text-gray-900">
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">
           PDF Actions
         </h2>
         {selectedOption === null ? (
@@ -79,7 +80,10 @@ export const OptionsPanel: React.FC<{ onAddSignature: () => void }> = ({
             {isCheckingNative ? (
               // Show loading state while checking for native app
               <div className="py-4 text-center text-gray-500">
-                Checking for SignSecure desktop app...
+                <div className="flex items-center justify-center gap-3">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#007acc] border-t-transparent"></div>
+                  <span>Checking for SignSecure desktop app...</span>
+                </div>
               </div>
             ) : (
               // Show action buttons once check is complete
@@ -89,18 +93,24 @@ export const OptionsPanel: React.FC<{ onAddSignature: () => void }> = ({
                   className={`flex w-full items-center justify-between rounded-lg px-4 py-3 transition-colors duration-200 ${
                     !isNativeAvailable
                       ? "cursor-not-allowed bg-gray-100 text-gray-400"
-                      : "bg-gray-50 hover:bg-gray-100"
+                      : "bg-[#007acc]/5 hover:bg-[#007acc]/10"
                   }`}
                   onClick={() => isNativeAvailable && setSelectedOption(option)}
                   disabled={!isNativeAvailable}
                 >
                   <div className="flex items-center space-x-3">
-                    {option === "sign" && <Fingerprint className="h-5 w-5" />}
-                    {option === "encrypt" && <Lock className="h-5 w-5" />}
-                    {option === "decrypt" && <Unlock className="h-5 w-5" />}
+                    {option === "sign" && (
+                      <Fingerprint className="h-5 w-5 text-[#007acc]" />
+                    )}
+                    {option === "encrypt" && (
+                      <Lock className="h-5 w-5 text-[#007acc]" />
+                    )}
+                    {option === "decrypt" && (
+                      <Unlock className="h-5 w-5 text-[#007acc]" />
+                    )}
                     <span className="font-medium capitalize">{option}</span>
                   </div>
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-5 w-5 text-[#007acc]" />
                 </button>
               ))
             )}
@@ -108,7 +118,7 @@ export const OptionsPanel: React.FC<{ onAddSignature: () => void }> = ({
         ) : (
           <div>
             <button
-              className="mb-4 flex items-center text-blue-500 hover:text-blue-600"
+              className="mb-4 flex items-center text-[#007acc] hover:text-[#0056b3]"
               onClick={() => setSelectedOption(null)}
             >
               <ChevronRight className="mr-1 h-5 w-5 rotate-180 transform" />
