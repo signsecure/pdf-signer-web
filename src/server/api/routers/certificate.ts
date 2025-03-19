@@ -12,7 +12,6 @@ export const certificateRouter = createTRPCRouter({
         certificate: true,
       },
     });
-    console.log(certificate?.certificate, "certificate");
 
     if (certificate?.certificate == null) {
       return {
@@ -54,7 +53,7 @@ export const certificateRouter = createTRPCRouter({
       }
       return {
         isPresent: true,
-        certificate: certificate.certificate ,
+        certificate: certificate.certificate,
       };
     }),
 });
