@@ -1,9 +1,12 @@
+"use client";
+
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/lib/constants";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Rnd, type RndDragCallback, type RndResizeCallback } from "react-rnd";
-import { type SignaturePosition } from "@/types/type";
+import type { SignaturePosition } from "@/types/type";
 import { usePdfDimensionsState } from "@/state/pdf-dimensions-state";
 import { usePagesState } from "@/state/pages-state";
+import { Trash2 } from "lucide-react";
 
 interface SignatureBoxProps {
   signature: SignaturePosition;
@@ -20,6 +23,10 @@ const SignatureBox = ({ signature, pageNumber }: SignatureBoxProps) => {
     height: 40,
     width: 100,
   });
+
+  // State to track whether this signature is focused (clicked)
+  const [isFocused, setIsFocused] = useState(false);
+  const signatureRef = useRef<HTMLDivElement>(null);
 
   const calculateCoords = useCallback(() => {
     const $page = document.querySelector<HTMLElement>(
@@ -71,6 +78,22 @@ const SignatureBox = ({ signature, pageNumber }: SignatureBoxProps) => {
     };
   }, [calculateCoords]);
 
+  // Close the delete option when clicking outside the signature box.
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        signatureRef.current &&
+        !signatureRef.current.contains(event.target as Node)
+      ) {
+        setIsFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   // Converts the current viewer coordinates of the signature back to PDF dimensions
   const updateSignatureInPDFDimensions = (
     newX: number,
@@ -114,7 +137,7 @@ const SignatureBox = ({ signature, pageNumber }: SignatureBoxProps) => {
       } else {
         const updatedPages = prevPages.map((page) => {
           if (page.pageNumber === pageNumber) {
-            // Update the signature that matches signNumber.
+            // Update the signature that matches sign.
             const updatedSignatures = page.signatures.map((sig) => {
               if (sig.sign === signature.sign) {
                 return {
@@ -138,13 +161,12 @@ const SignatureBox = ({ signature, pageNumber }: SignatureBoxProps) => {
       }
     };
 
-    // Update the pages state; if the page already contains the signature, we update it.
+    // Update the pages state.
     setPages(calculatePages());
   };
 
   // Called when dragging stops
   const onDragStop: RndDragCallback = (e, d) => {
-    // Get new viewer position from Rnd callback.
     const newX = d.x;
     const newY = d.y;
     updateSignatureInPDFDimensions(newX, newY, coords.width, coords.height);
@@ -163,6 +185,27 @@ const SignatureBox = ({ signature, pageNumber }: SignatureBoxProps) => {
     const newX = position.x;
     const newY = position.y;
     updateSignatureInPDFDimensions(newX, newY, newWidth, newHeight);
+  };
+
+  // Handle signature deletion
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updatedPages = prevPages
+      .map((page) => {
+        if (page.pageNumber === pageNumber) {
+          const updatedSignatures = page.signatures.filter(
+            (sig) => sig.sign !== signature.sign,
+          );
+          return {
+            ...page,
+            signatures: updatedSignatures,
+          };
+        }
+        return page;
+      })
+      .filter((page) => page.signatures.length > 0);
+
+    setPages(updatedPages);
   };
 
   return (
@@ -186,10 +229,29 @@ const SignatureBox = ({ signature, pageNumber }: SignatureBoxProps) => {
       onDragStop={onDragStop}
       onResizeStop={onResizeStop}
     >
-      <div className="flex h-full w-full items-center justify-center border-2 border-blue-500 bg-blue-100 bg-opacity-50">
+      <div
+        ref={signatureRef}
+        onClick={(e) => {
+          // Prevent click from propagating to parent elements.
+          e.stopPropagation();
+          setIsFocused(true);
+        }}
+        className={`relative flex h-full w-full items-center justify-center rounded border-2 bg-[#007acc]/10 transition-all ${
+          isFocused ? "border-[#007acc] shadow-lg" : "border-gray-300 shadow-sm"
+        }`}
+      >
+        {isFocused && (
+          <button
+            onClick={handleDelete}
+            className="absolute -bottom-8 z-50 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 focus:outline-none"
+            title="Delete signature"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
         <div
           style={{ fontSize: "clamp(0.575rem, 5vw, 1rem)" }}
-          className="text-center"
+          className="text-center text-[#007acc]"
         >
           Signature {signature.sign}
         </div>

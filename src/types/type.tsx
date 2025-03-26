@@ -1,3 +1,5 @@
+import { TextPosition, type SignerNameText } from "@/types/enums";
+
 export interface SignaturePosition {
   sign: number;
   x: number;
@@ -40,4 +42,24 @@ export interface NativeResponse {
     message: string;
   };
   version: string;
+}
+
+export interface SignatureAppearance {
+  showTimestamp: boolean;
+  showValidityIcon: boolean;
+  image?: string;
+  signerNameText?: SignerNameText;
+  customText?: string;
+  reason?: string;
+  location?: string;
+  authorizedBy?: string;
+}
+
+export interface TextPlacement {
+  pages?: number[];
+  searchText: string;
+  width: number;
+  height: number;
+  position?: TextPosition;
+  gap?: number;
 }

@@ -1,4 +1,10 @@
-import { type NativeResponse, type SignaturesOnPage } from "@/types/type";
+import { env } from "@/env";
+import {
+  type SignatureAppearance,
+  type NativeResponse,
+  type SignaturesOnPage,
+  TextPlacement,
+} from "@/types/type";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -70,8 +76,7 @@ export async function encryptPDf(data: string, certificateList: string[]) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Token":
-        "bnNa4KYWE8PplXOkBe1iPJ7Ghp5J+wE8USJWHFn57KRGO9Cy22lChUuCJ3SOl5ss",
+      "X-API-Token": env.NEXT_PUBLIC_SIGNER_TOKEN,
     },
     body: JSON.stringify({
       data,
@@ -86,8 +91,7 @@ export async function decryptPDf(data: string) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Token":
-        "bnNa4KYWE8PplXOkBe1iPJ7Ghp5J+wE8USJWHFn57KRGO9Cy22lChUuCJ3SOl5ss",
+      "X-API-Token": env.NEXT_PUBLIC_SIGNER_TOKEN,
     },
     body: JSON.stringify({
       data,
@@ -99,13 +103,15 @@ export async function decryptPDf(data: string) {
 export async function signWithPages(
   pages: SignaturesOnPage[],
   base64Pdf: string,
+  appearance: SignatureAppearance,
 ) {
+  console.log(appearance);
+
   const response = await fetch("https://localhost:9020/sign-pdf", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Token":
-        "bnNa4KYWE8PplXOkBe1iPJ7Ghp5J+wE8USJWHFn57KRGO9Cy22lChUuCJ3SOl5ss",
+      "X-API-Token": env.NEXT_PUBLIC_SIGNER_TOKEN,
     },
     body: JSON.stringify({
       token: "bnNa4KYWE8PplXOkBe1iPJ7Ghp5J+wE8USJWHFn57KRGO9Cy22lChUuCJ3SOl5ss",
@@ -123,6 +129,7 @@ export async function signWithPages(
           type: "pages",
           pages: pages,
         },
+        appearance,
       },
     }),
   });
@@ -130,18 +137,17 @@ export async function signWithPages(
 }
 
 export async function signWithTextPlacement(
-  searchText: string,
+  textPlacement: TextPlacement,
   base64Pdf: string,
+  appearance: SignatureAppearance,
 ) {
   const response = await fetch("https://localhost:9020/sign-pdf", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Token":
-        "bnNa4KYWE8PplXOkBe1iPJ7Ghp5J+wE8USJWHFn57KRGO9Cy22lChUuCJ3SOl5ss",
+      "X-API-Token": env.NEXT_PUBLIC_SIGNER_TOKEN,
     },
     body: JSON.stringify({
-      token: "bnNa4KYWE8PplXOkBe1iPJ7Ghp5J+wE8USJWHFn57KRGO9Cy22lChUuCJ3SOl5ss",
       document: {
         source: {
           type: "base64",
@@ -154,13 +160,9 @@ export async function signWithTextPlacement(
       signature: {
         placement: {
           type: "text",
-          textLocation: {
-            searchText,
-            pages: [0],
-            width: 100,
-            height: 100,
-          },
+          textLocation: textPlacement,
         },
+        appearance,
       },
     }),
   });
