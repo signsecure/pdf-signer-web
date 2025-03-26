@@ -16,7 +16,7 @@ const defaultAppearance: SignatureAppearance = {
   showTimestamp: true,
   showValidityIcon: true,
   image: "",
-  signerNameText: SignerNameText.NAME_ONLY,
+  signerNameText: SignerNameText.SIGNED_BY_WITH_NAME,
   customText: "",
   reason: "",
   location: "",

@@ -9,8 +9,21 @@ import {
 import { useFileState } from "@/state/file-state";
 import { api } from "@/trpc/react";
 import { useState } from "react";
-import { X, Plus, Mail, Loader2 } from "lucide-react";
+import {
+  X,
+  Plus,
+  Mail,
+  Loader2,
+  AlertTriangle,
+  CheckCircle,
+  KeyRound,
+  BadgeCheck,
+} from "lucide-react";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Alert, AlertDescription } from "./ui/alert";
 
 export function EncryptUI() {
   const { file, setFile } = useFileState();
@@ -104,153 +117,193 @@ export function EncryptUI() {
   };
 
   const handleAddEmail = async () => {
-    if (!email.trim()) {
-      toast.error("Email cannot be empty");
-      return;
-    }
-
-    if (!validateEmail(email)) {
+    if (!email.trim() || !validateEmail(email)) {
       toast.error("Please enter a valid email address");
       return;
     }
 
     if (emailList.includes(email)) {
-      toast.error("This email is already in the list");
+      toast.error("This email is already added");
       return;
     }
 
     setIsAddingEmail(true);
     try {
-      const certificateData = await getCertificateMutation.mutateAsync({
+      const response = await getCertificateMutation.mutateAsync({
         email,
       });
 
-      if (!certificateData?.isPresent) {
-        toast.error("This email has not registered its certificate");
-        return;
+      if (response.certificate) {
+        setEmailList([...emailList, email]);
+        setCertificateList([...certificateList, response.certificate]);
+        setEmail("");
+      } else {
+        toast.error(`No certificate found for ${email}`);
       }
-
-      setCertificateList([
-        ...certificateList,
-        certificateData.certificate ?? "",
-      ]);
-      setEmailList([...emailList, email]);
-      setEmail("");
-      toast.success(`Added ${email} to recipients`);
     } catch (error) {
-      console.error("Error adding email:", error);
-      toast.error("Failed to verify certificate for this email");
+      console.error("Error getting certificate:", error);
+      toast.error(
+        "An unexpected error occurred while retrieving the certificate",
+      );
     } finally {
       setIsAddingEmail(false);
     }
   };
 
-  const handleRemoveEmail = (emailToRemove: string) => {
-    setEmailList(emailList.filter((e) => e !== emailToRemove));
-    toast.info(`Removed ${emailToRemove} from recipients`);
+  const handleRemoveEmail = (index: number) => {
+    const newEmailList = [...emailList];
+    const newCertificateList = [...certificateList];
+    newEmailList.splice(index, 1);
+    newCertificateList.splice(index, 1);
+    setEmailList(newEmailList);
+    setCertificateList(newCertificateList);
   };
 
-  const handleKeyDown = async (e: {
-    key: string;
-    preventDefault: () => void;
-  }) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      await handleAddEmail();
+      void handleAddEmail();
     }
   };
 
-  if (isCheckingCertificate) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-[#007acc]" />
-        <span className="ml-2">Checking certificate status...</span>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">Encryption Options</h3>
+    <div className="space-y-5">
+      <div className="mb-4 flex items-center gap-2">
+        <KeyRound className="h-5 w-5 text-primary" />
+        <h3 className="text-lg font-medium">Encryption Options</h3>
+      </div>
 
-      <div className="space-y-2">
+      {!isCertificatePresent && !isCheckingCertificate && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4"
+        >
+          <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="ml-2 text-sm">
+              <span className="font-medium">Certificate required. </span>
+              You need to register a certificate first to encrypt documents.
+            </AlertDescription>
+          </Alert>
+
+          <div className="mt-3 flex justify-center">
+            <Button
+              variant="outline"
+              className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+              onClick={handleRegisterCertificate}
+              disabled={isRegisteringCertificate}
+            >
+              {isRegisteringCertificate ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                <>
+                  <BadgeCheck className="mr-2 h-4 w-4" />
+                  Register Certificate
+                </>
+              )}
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
+      {isCertificatePresent && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mb-3"
+        >
+          <Alert className="border-green-200 bg-green-50 text-green-800">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="ml-2 text-sm">
+              Certificate is registered and ready for use.
+            </AlertDescription>
+          </Alert>
+        </motion.div>
+      )}
+
+      <div className="space-y-3">
         <label className="block text-sm font-medium text-gray-700">
           Recipients (who can decrypt this PDF)
         </label>
 
         <div className="flex items-center gap-2">
           <div className="relative flex-grow">
-            <input
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Enter email address"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm focus:border-[#007acc] focus:outline-none focus:ring-1 focus:ring-[#007acc]"
-              disabled={isAddingEmail}
+              className="pl-3 pr-10"
+              disabled={isAddingEmail || isEncrypting}
             />
             <Mail className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           </div>
-          <button
-            onClick={handleAddEmail}
-            className="flex h-9 w-9 items-center justify-center rounded-md bg-[#007acc] text-white hover:bg-[#0056b3] disabled:cursor-not-allowed disabled:bg-gray-400"
-            disabled={isAddingEmail || !email.trim()}
+          <Button
+            onClick={() => void handleAddEmail()}
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+            disabled={isAddingEmail || !email.trim() || isEncrypting}
           >
             {isAddingEmail ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Plus size={18} />
             )}
-          </button>
+          </Button>
         </div>
 
-        {emailList.length > 0 && (
-          <div className="mt-2 space-y-2">
-            <p className="text-xs text-gray-500">
-              {emailList.length} recipient{emailList.length !== 1 ? "s" : ""}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {emailList.map((email, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-1 rounded-full bg-[#007acc]/10 px-3 py-1 text-sm"
-                >
-                  <span className="max-w-[150px] truncate">{email}</span>
-                  <button
-                    onClick={() => handleRemoveEmail(email)}
-                    className="ml-1 rounded-full p-0.5 text-gray-500 hover:bg-[#007acc]/20 hover:text-gray-700"
-                    disabled={isEncrypting}
-                  >
-                    <X size={14} />
-                  </button>
+        <AnimatePresence>
+          {emailList.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden rounded-md border border-gray-200 bg-gray-50"
+            >
+              <div className="p-3">
+                <h4 className="mb-2 text-xs font-medium text-gray-500">
+                  Recipients:
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {emailList.map((email, index) => (
+                    <motion.div
+                      key={email}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm text-primary"
+                    >
+                      <Mail className="mr-1 h-3.5 w-3.5" />
+                      <span className="max-w-[120px] truncate">{email}</span>
+                      <button
+                        onClick={() => handleRemoveEmail(index)}
+                        className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary/20 text-primary hover:bg-primary/30"
+                        disabled={isEncrypting}
+                        aria-label="Remove recipient"
+                      >
+                        <X size={10} />
+                      </button>
+                    </motion.div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {!isCertificatePresent?.isPresent && (
-        <button
-          className="flex w-full items-center justify-center rounded-lg bg-[#007acc] px-4 py-2 text-white transition-colors hover:bg-[#0056b3] disabled:cursor-not-allowed disabled:bg-gray-400"
-          onClick={handleRegisterCertificate}
-          disabled={isRegisteringCertificate}
-        >
-          {isRegisteringCertificate ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Registering Certificate...
-            </>
-          ) : (
-            "Register Certificate"
-          )}
-        </button>
-      )}
-
-      <button
-        className="flex w-full items-center justify-center rounded-lg bg-[#007acc] px-4 py-2 text-white transition-colors hover:bg-[#0056b3] disabled:cursor-not-allowed disabled:bg-gray-400"
+      <Button
+        className="mt-2 w-full"
         onClick={handleEncryptClick}
-        disabled={emailList.length === 0 || !file || isEncrypting}
+        disabled={
+          emailList.length === 0 || !file || isEncrypting || isAddingEmail
+        }
       >
         {isEncrypting ? (
           <>
@@ -258,9 +311,12 @@ export function EncryptUI() {
             Encrypting PDF...
           </>
         ) : (
-          "Encrypt PDF"
+          <>
+            <KeyRound className="mr-2 h-4 w-4" />
+            Encrypt PDF
+          </>
         )}
-      </button>
+      </Button>
     </div>
   );
 }
